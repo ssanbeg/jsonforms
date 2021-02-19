@@ -22,7 +22,7 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 */
-import { JsonFormsReduxContext } from '@jsonforms/react';
+import { JsonFormsReduxContext } from '@jsonforms/react/lib/redux';
 import * as React from 'react';
 import { Provider } from 'react-redux';
 import ArrayControl from '../../src/complex/array/ArrayControlRenderer';
@@ -57,13 +57,7 @@ const fixture = {
   },
   data: {
     test: [{ x: 1, y: 3 }]
-  },
-  styles: [
-    {
-      name: 'array.table',
-      classNames: ['array-table-layout', 'control']
-    }
-  ]
+  }
 };
 
 describe('Array control renderer', () => {

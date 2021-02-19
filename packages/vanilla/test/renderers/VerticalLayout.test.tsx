@@ -25,20 +25,13 @@
 import * as React from 'react';
 import { Provider } from 'react-redux';
 import { UISchemaElement, VerticalLayout } from '@jsonforms/core';
-import { JsonFormsReduxContext } from '@jsonforms/react';
+import { JsonFormsReduxContext } from '@jsonforms/react/lib/redux';
 import Adapter from 'enzyme-adapter-react-16';
 import Enzyme, { mount, ReactWrapper } from 'enzyme';
 import VerticalLayoutRenderer, { verticalLayoutTester } from '../../src/layouts/VerticalLayout';
 import { initJsonFormsVanillaStore } from '../vanillaStore';
 
 Enzyme.configure({ adapter: new Adapter() });
-
-const styles = [
-  {
-    name: 'vertical.layout',
-    classNames: ['vertical-layout']
-  }
-];
 
 test('tester', () => {
   expect(verticalLayoutTester(undefined, undefined)).toBe(-1);
@@ -81,8 +74,7 @@ describe('Vertical layout', () => {
     const store = initJsonFormsVanillaStore({
       data: {},
       schema: {},
-      uischema,
-      styles
+      uischema
     });
     wrapper = mount(
       <Provider store={store}>
@@ -103,8 +95,7 @@ describe('Vertical layout', () => {
     const store = initJsonFormsVanillaStore({
       data: {},
       schema: {},
-      uischema,
-      styles
+      uischema
     });
     wrapper = mount(
       <Provider store={store}>
@@ -127,8 +118,7 @@ describe('Vertical layout', () => {
     const store = initJsonFormsVanillaStore({
       data: {},
       schema: {},
-      uischema,
-      styles
+      uischema
     });
 
     wrapper = mount(
@@ -153,8 +143,7 @@ describe('Vertical layout', () => {
     const store = initJsonFormsVanillaStore({
       data: {},
       schema: {},
-      uischema,
-      styles,
+      uischema
     });
 
     wrapper = mount(

@@ -22,7 +22,7 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 */
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ChangeDetectorRef } from '@angular/core';
 import { JsonFormsAngularService, JsonFormsControl } from '@jsonforms/angular';
 import {
   and,
@@ -47,14 +47,18 @@ import {
       <mat-hint class="mat-caption" *ngIf="shouldShowUnfocusedDescription()">{{ description }}</mat-hint>
       <mat-error class="mat-caption">{{ error }}</mat-error>
     </div>
-  `
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ToggleControlRenderer extends JsonFormsControl {
-  constructor(jsonformsService: JsonFormsAngularService) {
+  constructor(jsonformsService: JsonFormsAngularService, private changeDetectorRef: ChangeDetectorRef) {
     super(jsonformsService);
   }
   isChecked = () => this.data || false;
   getEventValue = (event: any) => event.checked;
+  mapAdditionalProps() {
+    this.changeDetectorRef.markForCheck();
+  }
 }
 
 export const ToggleControlRendererTester: RankedTester = rankWith(

@@ -56,8 +56,8 @@ export const MuiSelect = React.memo((props: EnumCellProps & WithClassname) => {
     >
       {[<MenuItem value='' key={'empty'} />].concat(
         options.map(optionValue => (
-          <MenuItem value={optionValue} key={optionValue}>
-            {optionValue}
+          <MenuItem value={optionValue.value} key={optionValue.value}>
+            {optionValue.label}
           </MenuItem>
         ))
       )}

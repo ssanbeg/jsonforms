@@ -26,6 +26,10 @@ import MaterialBooleanControl, {
   materialBooleanControlTester,
   MaterialBooleanControl as MaterialBooleanControlUnwrapped
 } from './MaterialBooleanControl';
+import MaterialBooleanToggleControl, {
+  materialBooleanToggleControlTester,
+  MaterialBooleanToggleControl as MaterialBooleanToggleControlUnwrapped
+} from './MaterialBooleanToggleControl';
 import MaterialEnumControl, {
   materialEnumControlTester,
   MaterialEnumControl as MaterialEnumControlUnwrapped
@@ -68,8 +72,19 @@ import MaterialAnyOfStringOrEnumControl, {
   MaterialAnyOfStringOrEnumControl as MaterialAnyOfStringOrEnumControlUnwrapped
 } from './MaterialAnyOfStringOrEnumControl';
 
+import MaterialOneOfEnumControl, {
+  materialOneOfEnumControlTester,
+  MaterialOneOfEnumControl as MaterialOneOfEnumControlUnwrapped
+} from './MaterialOneOfEnumControl';
+
+import MaterialOneOfRadioGroupControl, {
+  materialOneOfRadioGroupControlTester,
+  MaterialOneOfRadioGroupControl as MaterialOneOfRadioGroupControlUnwrapped
+} from './MaterialOneOfRadioGroupControl';
+
 export const Unwrapped = {
   MaterialBooleanControl: MaterialBooleanControlUnwrapped,
+  MaterialBooleanToggleControl: MaterialBooleanToggleControlUnwrapped,
   MaterialEnumControl: MaterialEnumControlUnwrapped,
   MaterialNativeControl: MaterialNativeControlUnwrapped,
   MaterialDateControl: MaterialDateControlUnwrapped,
@@ -79,12 +94,16 @@ export const Unwrapped = {
   MaterialIntegerControl: MaterialIntegerControlUnwrapped,
   MaterialNumberControl: MaterialNumberControlUnwrapped,
   MaterialTextControl: MaterialTextControlUnwrapped,
-  MaterialAnyOfStringOrEnumControl: MaterialAnyOfStringOrEnumControlUnwrapped
+  MaterialAnyOfStringOrEnumControl: MaterialAnyOfStringOrEnumControlUnwrapped,
+  MaterialOneOfEnumControl: MaterialOneOfEnumControlUnwrapped,
+  MaterialOneOfRadioGroupControl: MaterialOneOfRadioGroupControlUnwrapped
 };
 
 export {
   MaterialBooleanControl,
   materialBooleanControlTester,
+  MaterialBooleanToggleControl,
+  materialBooleanToggleControlTester,
   MaterialEnumControl,
   materialEnumControlTester,
   MaterialNativeControl,
@@ -104,5 +123,9 @@ export {
   MaterialTextControl,
   materialTextControlTester,
   MaterialAnyOfStringOrEnumControl,
-  materialAnyOfStringOrEnumControlTester
+  materialAnyOfStringOrEnumControlTester,
+  MaterialOneOfEnumControl,
+  materialOneOfEnumControlTester,
+  MaterialOneOfRadioGroupControl,
+  materialOneOfRadioGroupControlTester
 };

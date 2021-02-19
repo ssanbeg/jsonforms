@@ -21,7 +21,7 @@
     "ava": "~2.4.0",
     "babel-loader": "^8.0.6",
     "coveralls": "^3.0.9",
-    "cross-env": "^6.0.3",
+    "cross-env": "^7.0.2",
     "css-loader": "^3.2.0",
     "lcov-result-merger": "^3.1.0",
     "lerna": "^3.19.0",
@@ -36,7 +36,7 @@
     "tslint-loader": "^3.5.4",
     "tslint-react": "^4.1.0",
     "typedoc": "^0.15.3",
-    "typescript": "3.6.4",
+    "typescript": "3.8.3",
     "webpack": "^4.41.2",
     "webpack-merge": "^4.2.2"
   }

@@ -41,14 +41,7 @@ import { getStyle, getStyleAsClassName } from '../reducers';
 import { VanillaRendererProps } from '../index';
 import { ComponentType } from 'react';
 import { findStyle, findStyleAsClassName } from '../reducers/styling';
-
-/**
- * A style associates a name with a list of CSS class names.
- */
-export interface StyleDef {
-  name: string;
-  classNames: string[] | ((...args: any[]) => string[]);
-}
+import { useStyles } from '../styles';
 
 /**
  * Add vanilla props to the return value of calling the given
@@ -78,6 +71,8 @@ export const addVanillaControlProps = <P extends StatePropsOfControl>(
     }
     const labelClass = getStyleAsClassName(state)('control.label');
     const descriptionClassName = getStyleAsClassName(state)('input.description');
+    const validationClassName = getStyleAsClassName(state)('control.validation');
+    const validationErrorClassName = getStyleAsClassName(state)('control.validation.error');
     const inputClassName = ['validate'].concat(isValid ? 'valid' : 'invalid');
 
     return {
@@ -88,38 +83,45 @@ export const addVanillaControlProps = <P extends StatePropsOfControl>(
         wrapper: classNames.join(' '),
         input: inputClassName.join(' '),
         label: labelClass,
-        description: descriptionClassName
+        description: descriptionClassName,
+        validation: validationClassName,
+        validationError: validationErrorClassName
       }
     };
   };
 
 export const withVanillaControlProps = (Component: ComponentType<any>) => (props: any) => {
   const ctx = useJsonForms();
+  const contextStyles = useStyles();
   const controlElement = props.uischema as ControlElement;
   const config = ctx.config;
   const trim = config && config.trim;
-  const styles = findStyle(ctx.styles)('control');
+  const styles = findStyle(contextStyles)('control');
   let classNames: string[] = !isEmpty(controlElement.scope)
     ? styles.concat([`${convertToValidClassName(controlElement.scope)}`])
     : [''];
 
   if (trim) {
-    classNames = classNames.concat(findStyle(ctx.styles)('control.trim'));
+    classNames = classNames.concat(findStyle(contextStyles)('control.trim'));
   }
   const isValid = isEmpty(props.errors);
-  const labelClass = findStyleAsClassName(ctx.styles)('control.label');
-  const descriptionClassName = findStyleAsClassName(ctx.styles)('input.description');
+  const labelClass = findStyleAsClassName(contextStyles)('control.label');
+  const descriptionClassName = findStyleAsClassName(contextStyles)('input.description');
+  const validationClassName = findStyleAsClassName(contextStyles)('control.validation');
+  const validationErrorClassName = findStyleAsClassName(contextStyles)('control.validation.error');
   const inputClassName = ['validate'].concat(isValid ? 'valid' : 'invalid');
   return (
     <Component
       {...props}
-      getStyleAsClassName={findStyleAsClassName(ctx.styles)}
-      getStyle={findStyle(ctx.styles)}
+      getStyleAsClassName={findStyleAsClassName(contextStyles)}
+      getStyle={findStyle(contextStyles)}
       classNames={{
         wrapper: classNames.join(' '),
         input: inputClassName.join(' '),
         label: labelClass,
-        description: descriptionClassName
+        description: descriptionClassName,
+        validation: validationClassName,
+        validationError: validationErrorClassName
       }}
     />
   );
@@ -171,11 +173,11 @@ export const addVanillaCellProps = (
 const withVanillaCellPropsForType = (type: string) => (
   Component: ComponentType<any>
 ) => (props: any) => {
-  const ctx = useJsonForms();
   const inputClassName = ['validate'].concat(
     props.isValid ? 'valid' : 'invalid'
   );
-  const definedStyle = findStyleAsClassName(ctx.styles)(type);
+  const styles = useStyles();
+  const definedStyle = findStyleAsClassName(styles)(type);
   if (definedStyle) {
     inputClassName.push(definedStyle);
   }
@@ -183,8 +185,8 @@ const withVanillaCellPropsForType = (type: string) => (
   return (
     <Component
       {...props}
-      getStyleAsClassName={findStyleAsClassName(ctx.styles)}
-      getStyle={findStyle(ctx.styles)}
+      getStyleAsClassName={findStyleAsClassName(styles)}
+      getStyle={findStyle(styles)}
       className={inputClassName.join(' ')}
     />
   );
@@ -198,78 +200,3 @@ export const withVanillaEnumCellProps = withVanillaCellPropsForType(
   'control.select'
 );
 
-/**
- * Pre-defined vanilla styles.
- *
- * @type {{name: string; classNames: string[]}[]}
- */
-export const vanillaStyles = [
-  {
-    name: 'control',
-    classNames: ['control']
-  },
-  {
-    name: 'control.trim',
-    classNames: ['trim']
-  },
-  {
-    name: 'control.input',
-    classNames: ['input']
-  },
-  {
-    name: 'control.select',
-    classNames: ['select']
-  },
-  {
-    name: 'control.validation',
-    classNames: ['validation']
-  },
-  {
-    name: 'categorization',
-    classNames: ['categorization']
-  },
-  {
-    name: 'categorization.master',
-    classNames: ['categorization-master']
-  },
-  {
-    name: 'categorization.detail',
-    classNames: ['categorization-detail']
-  },
-  {
-    name: 'category.group',
-    classNames: ['category-group']
-  },
-  {
-    name: 'array.layout',
-    classNames: ['array-layout']
-  },
-  {
-    name: 'array.children',
-    classNames: ['children']
-  },
-  {
-    name: 'group.layout',
-    classNames: ['group-layout']
-  },
-  {
-    name: 'horizontal.layout',
-    classNames: ['horizontal-layout']
-  },
-  {
-    name: 'horizontal.layout.item',
-    classNames: ([size]: number[]) => [`horizontal-layout-${size}`]
-  },
-  {
-    name: 'vertical.layout',
-    classNames: ['vertical-layout']
-  },
-  {
-    name: 'array.table',
-    classNames: ['array-table-layout', 'control']
-  },
-  {
-    name: 'input.description',
-    classNames: ['input-description']
-  }
-];

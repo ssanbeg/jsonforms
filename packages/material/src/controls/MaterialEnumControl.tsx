@@ -1,7 +1,7 @@
 /*
   The MIT License
 
-  Copyright (c) 2018-2019 EclipseSource Munich
+  Copyright (c) 2018-2020 EclipseSource Munich
   https://github.com/eclipsesource/jsonforms
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -35,10 +35,7 @@ import { MuiSelect } from '../mui-controls/MuiSelect';
 import { MaterialInputControl } from './MaterialInputControl';
 
 export const MaterialEnumControl = (props: ControlProps & OwnPropsOfEnum) => (
-  <MaterialInputControl
-    {...props}
-    input={MuiSelect}
-  />
+    <MaterialInputControl {...props} input={MuiSelect} />
 );
 
 export const materialEnumControlTester: RankedTester = rankWith(

@@ -24,7 +24,7 @@
 */
 import * as React from 'react';
 import { GroupLayout } from '@jsonforms/core';
-import { JsonFormsReduxContext } from '@jsonforms/react';
+import { JsonFormsReduxContext } from '@jsonforms/react/lib/redux';
 import { Provider } from 'react-redux';
 import Adapter from 'enzyme-adapter-react-16';
 import Enzyme, { mount, ReactWrapper } from 'enzyme';
@@ -37,13 +37,7 @@ const fixture = {
   uischema: {
     type: 'Group',
     elements: [{ type: 'Control' }]
-  },
-  styles: [
-    {
-      name: 'group.layout',
-      classNames: ['group-layout']
-    }
-  ]
+  }
 };
 
 test('tester', () => {
@@ -68,8 +62,7 @@ describe('Group layout', () => {
     const store = initJsonFormsVanillaStore({
       data: {},
       schema: {},
-      uischema,
-      styles: fixture.styles
+      uischema
     });
     wrapper = mount(
       <Provider store={store}>
@@ -96,8 +89,7 @@ describe('Group layout', () => {
     const store = initJsonFormsVanillaStore({
       data: {},
       schema: {},
-      uischema,
-      styles: fixture.styles
+      uischema
     });
     wrapper = mount(
       <Provider store={store}>
@@ -122,8 +114,7 @@ describe('Group layout', () => {
     const store = initJsonFormsVanillaStore({
       data: {},
       schema: {},
-      uischema,
-      styles: fixture.styles
+      uischema
     });
     wrapper = mount(
       <Provider store={store}>
@@ -141,8 +132,7 @@ describe('Group layout', () => {
     const store = initJsonFormsVanillaStore({
       data: {},
       schema: {},
-      uischema: fixture.uischema,
-      styles: fixture.styles
+      uischema: fixture.uischema
     });
     wrapper = mount(
       <Provider store={store}>
@@ -162,8 +152,7 @@ describe('Group layout', () => {
     const store = initJsonFormsVanillaStore({
       data: {},
       schema: {},
-      uischema: fixture.uischema,
-      styles: fixture.styles
+      uischema: fixture.uischema
     });
     wrapper = mount(
       <Provider store={store}>

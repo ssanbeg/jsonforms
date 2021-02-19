@@ -35,7 +35,9 @@ import {
   subErrorsAt
 } from '../../src/reducers/core';
 
-import { createAjv } from '../../src';
+import { createAjv, updateCore } from '../../src';
+import { setSchema, setValidationMode } from '../../lib';
+import { cloneDeep } from 'lodash';
 
 const createRefParserOptions = (
   encoding = 'testEncoding'
@@ -412,6 +414,31 @@ test('core reducer - previous state - init with undefined data should not change
     init(undefined, schema, undefined, {})
   );
   t.deepEqual(after.data, undefined);
+});
+
+test('core reducer - previous state - init schema with id', t => {
+  const schema: JsonSchema = {
+    $id: 'https://www.jsonforms.io/example.json',
+    type: 'object',
+    properties: {
+      animal: {
+        type: 'string'
+      }
+    }
+  };
+  const updatedSchema = cloneDeep(schema);
+  updatedSchema.properties.animal.minLength = 5;
+
+  const before: JsonFormsCore = coreReducer(
+    undefined,
+    init(undefined, schema, undefined, undefined)
+  );
+
+  const after: JsonFormsCore = coreReducer(
+    before,
+    init(undefined, updatedSchema, before.uischema, undefined)
+  );
+  t.is(after.schema.properties.animal.minLength, 5);
 });
 
 test('core reducer - update - undefined data should update for given path', t => {
@@ -1193,3 +1220,324 @@ test('subErrorsAt filters oneOf array inner', t => {
   t.is(filtered.length, 1);
   t.deepEqual(filtered[0], state.errors[1]);
 });
+
+test('errorAt respects hide validation mode', t => {
+  const schema = {
+    type: 'object',
+    properties: {
+      animal: {
+        type: 'string'
+      }
+    }
+  };
+
+  const data = {
+    animal: 100
+  };
+
+  const core: JsonFormsCore = coreReducer(
+    undefined,
+    init(data, schema, undefined, { validationMode: 'ValidateAndHide' })
+  );
+  t.is(core.errors.length, 1);
+  t.is(errorAt('animal', schema)(core).length, 0);
+})
+
+test('core reducer - setValidationMode - No validation should not produce errors', t => {
+  const schema = {
+    type: 'object',
+    properties: {
+      animal: {
+        type: 'string'
+      }
+    }
+  };
+
+  const data = {
+    animal: 100
+  };
+
+  const core: JsonFormsCore = coreReducer(
+    undefined,
+    init(data, schema, undefined, { validationMode: 'NoValidation' })
+  );
+  t.is(core.errors.length, 0);
+  t.is(core.validationMode, 'NoValidation');
+});
+
+test('core reducer - setValidationMode - No validation should remove errors', t => {
+  const schema = {
+    type: 'object',
+    properties: {
+      animal: {
+        type: 'string'
+      }
+    }
+  };
+
+  const data = {
+    animal: 100
+  };
+
+  const before: JsonFormsCore = coreReducer(undefined, init(data, schema));
+  t.is(before.errors.length, 1);
+
+  const after = coreReducer(before, setValidationMode('NoValidation'));
+  t.is(after.errors.length, 0);
+  t.is(after.validationMode, 'NoValidation');
+});
+
+test('core reducer - init - ValidateAndShow should be default validationMode', t => {
+  const data = {
+    animal: 100
+  };
+
+  const core: JsonFormsCore = coreReducer(undefined, init(data));
+  t.is(core.validationMode, 'ValidateAndShow');
+});
+
+test('core reducer - init - Validation should produce errors', t => {
+  const schema = {
+    type: 'object',
+    properties: {
+      animal: {
+        type: 'string'
+      }
+    }
+  };
+
+  const data = {
+    animal: 100
+  };
+
+  const coreShow: JsonFormsCore = coreReducer(
+    undefined,
+    init(data, schema, undefined, { validationMode: 'ValidateAndShow' })
+  );
+  t.is(coreShow.errors.length, 1);
+  t.is(coreShow.validationMode, 'ValidateAndShow');
+
+  const coreHide: JsonFormsCore = coreReducer(
+    undefined,
+    init(data, schema, undefined, { validationMode: 'ValidateAndHide' })
+  );
+  t.is(coreHide.errors.length, 1);
+  t.is(coreHide.validationMode, 'ValidateAndHide');
+});
+
+test('core reducer - setValidationMode - Validation should produce errors', t => {
+  const schema = {
+    type: 'object',
+    properties: {
+      animal: {
+        type: 'string'
+      }
+    }
+  };
+
+  const data = {
+    animal: 100
+  };
+
+  const before: JsonFormsCore = coreReducer(
+    undefined,
+    init(data, schema, undefined, { validationMode: 'NoValidation' })
+  );
+  t.is(before.errors.length, 0);
+
+  const coreShow: JsonFormsCore = coreReducer(
+    before,
+    setValidationMode('ValidateAndShow')
+  );
+  t.is(coreShow.errors.length, 1);
+
+  const coreHide: JsonFormsCore = coreReducer(
+    before,
+    setValidationMode('ValidateAndHide')
+  );
+  t.is(coreHide.errors.length, 1);
+});
+
+test('core reducer - setValidationMode - Hide validation should preserve errors', t => {
+  const schema = {
+    type: 'object',
+    properties: {
+      animal: {
+        type: 'string'
+      }
+    }
+  };
+
+  const data = {
+    animal: 100
+  };
+
+  const before: JsonFormsCore = coreReducer(
+    undefined,
+    init(data, schema)
+  );
+  t.is(before.errors.length, 1);
+
+  const after: JsonFormsCore = coreReducer(
+    before,
+    setValidationMode('ValidateAndHide')
+  );
+  t.is(after.errors.length, 1);
+});
+
+test('core reducer - update - NoValidation should not produce errors', t => {
+  const schema = {
+    type: 'object',
+    properties: {
+      animal: {
+        type: 'string'
+      }
+    }
+  };
+
+  const data = {
+    animal: 'dog'
+  };
+
+  const before: JsonFormsCore = coreReducer(
+    undefined,
+    init(data, schema, undefined, { validationMode: 'NoValidation' })
+  );
+  t.is(before.errors.length, 0);
+
+  const after: JsonFormsCore = coreReducer(
+    before,
+    update('animal', () => 100)
+  );
+  t.is(after.errors.length, 0);
+});
+
+test('core reducer - update - ValidateAndHide should produce errors', t => {
+  const schema = {
+    type: 'object',
+    properties: {
+      animal: {
+        type: 'string'
+      }
+    }
+  };
+
+  const data = {
+    animal: 'dog'
+  };
+
+  const before: JsonFormsCore = coreReducer(
+    undefined,
+    init(data, schema, undefined, { validationMode: 'ValidateAndHide' })
+  );
+  t.is(before.errors.length, 0);
+
+  const after: JsonFormsCore = coreReducer(
+    before,
+    update('animal', () => 100)
+  );
+  t.is(after.errors.length, 1);
+});
+
+test('core reducer - update core - state should be unchanged when nothing changes', t => {
+  const schema = {
+    type: 'object',
+    properties: {
+      animal: {
+        type: 'string'
+      }
+    }
+  };
+
+  const data = {
+    animal: 'dog'
+  };
+  const before: JsonFormsCore = coreReducer(
+    undefined,
+    init(data, schema)
+    );
+
+  const after: JsonFormsCore = coreReducer(
+    before,
+    updateCore(before.data, before.schema, before.uischema, before.ajv)
+  );
+  t.true(before === after);
+});
+
+test('core reducer - update core - unchanged state properties should be unchanged when state changes', t => {
+  const schema = {
+    type: 'object',
+    properties: {
+      animal: {
+        type: 'string'
+      }
+    }
+  };
+
+  const data = {
+    animal: 'dog'
+  };
+  const before: JsonFormsCore = coreReducer(
+    undefined,
+    init(data, schema)
+    );
+
+  const afterDataUpdate: JsonFormsCore = coreReducer(
+    before,
+    updateCore({
+      animal: 'cat'
+    }, before.schema, before.uischema, before.ajv)
+  );
+  t.true(before.schema === afterDataUpdate.schema);
+  t.true(before.ajv === afterDataUpdate.ajv);
+  t.true(before.errors === afterDataUpdate.errors);
+  t.true(before.refParserOptions === afterDataUpdate.refParserOptions);
+  t.true(before.uischema === afterDataUpdate.uischema);
+  t.true(before.validationMode === afterDataUpdate.validationMode);
+  t.true(before.validator === afterDataUpdate.validator);
+
+  const updatedSchema = {
+    type: 'object',
+    properties: {
+      animal: {
+        type: 'string'
+      },
+      id: {
+        type: 'number'
+      }
+    }
+  };
+  // check that data stays unchanged as well
+  const afterSchemaUpdate : JsonFormsCore = coreReducer(
+    before,
+    updateCore(before.data, updatedSchema, before.uischema, before.ajv)
+  );
+  t.true(before.data === afterSchemaUpdate.data);
+});
+
+test('core reducer - setSchema - schema with id', t => {
+  const schema: JsonSchema = {
+    $id: 'https://www.jsonforms.io/example.json',
+    type: 'object',
+    properties: {
+      animal: {
+        type: 'string'
+      }
+    }
+  };
+  const updatedSchema = cloneDeep(schema);
+  updatedSchema.properties.animal.minLength = 5;
+
+  const before: JsonFormsCore = coreReducer(
+    undefined,
+    init(undefined, schema, undefined, undefined)
+  );
+
+  const after: JsonFormsCore = coreReducer(
+    before,
+    setSchema(updatedSchema)
+  );
+  t.is(after.schema.properties.animal.minLength, 5);
+});
+
+

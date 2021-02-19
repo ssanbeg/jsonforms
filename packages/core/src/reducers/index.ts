@@ -1,39 +1,3 @@
-import { ControlElement, UISchemaElement } from '../models/uischema';
-import {
-  JsonFormsCore,
-  coreReducer,
-  errorAt,
-  errorsAt,
-  extractData,
-  extractRefParserOptions,
-  extractSchema,
-  extractUiSchema,
-  subErrorsAt
-} from './core';
-import {
-  JsonFormsDefaultDataRegistryEntry,
-  defaultDataReducer,
-  extractDefaultData
-} from './default-data';
-import { JsonFormsRendererRegistryEntry, rendererReducer } from './renderers';
-import { JsonFormsState, JsonFormsSubStates } from '../store';
-import { Reducer, combineReducers } from 'redux';
-import {
-  UISchemaTester,
-  findMatchingUISchema,
-  uischemaRegistryReducer
-} from './uischemas';
-import {
-  fetchLocale,
-  findLocalizedSchema,
-  findLocalizedUISchema,
-  i18nReducer
-} from './i18n';
-
-import { Generate } from '../generators';
-import { JsonFormsCellRendererRegistryEntry } from './cells';
-import { JsonSchema } from '../models/jsonSchema';
-import RefParser from 'json-schema-ref-parser';
 /*
   The MIT License
   
@@ -58,9 +22,49 @@ import RefParser from 'json-schema-ref-parser';
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 */
+import { ControlElement, UISchemaElement } from '../models/uischema';
+import {
+  coreReducer,
+  errorAt,
+  errorsAt,
+  extractAjv,
+  extractData,
+  extractRefParserOptions,
+  extractSchema,
+  extractUiSchema,
+  JsonFormsCore,
+  subErrorsAt,
+  ValidationMode
+} from './core';
+import {
+  extractDefaultData,
+  JsonFormsDefaultDataRegistryEntry
+} from './default-data';
+import { defaultDataReducer } from '../reducers/default-data';
+import { JsonFormsRendererRegistryEntry, rendererReducer } from './renderers';
+import { JsonFormsState } from '../store';
+import {
+  findMatchingUISchema,
+  JsonFormsUISchemaRegistryEntry,
+  uischemaRegistryReducer,
+  UISchemaTester
+} from './uischemas';
+import {
+  fetchLocale,
+  findLocalizedSchema,
+  findLocalizedUISchema,
+  i18nReducer
+} from './i18n';
+
+import { Generate } from '../generators';
+import { JsonFormsCellRendererRegistryEntry } from './cells';
+import { JsonSchema } from '../models/jsonSchema';
+import RefParser from 'json-schema-ref-parser';
+
 import { cellReducer } from './cells';
 import { configReducer } from './config';
 import get from 'lodash/get';
+import { Ajv } from 'ajv';
 
 export {
   rendererReducer,
@@ -70,23 +74,20 @@ export {
   configReducer,
   UISchemaTester,
   uischemaRegistryReducer,
-  findMatchingUISchema
+  findMatchingUISchema,
+  JsonFormsUISchemaRegistryEntry
 };
-export { JsonFormsCore };
+export { JsonFormsCore, ValidationMode };
 
-export const jsonformsReducer = (
-  additionalReducers = {}
-): Reducer<JsonFormsSubStates> =>
-  combineReducers<JsonFormsSubStates>({
-    core: coreReducer,
-    renderers: rendererReducer,
-    cells: cellReducer,
-    config: configReducer,
-    uischemas: uischemaRegistryReducer,
-    defaultData: defaultDataReducer,
-    i18n: i18nReducer,
-    ...additionalReducers
-  });
+export const jsonFormsReducerConfig = {
+  core: coreReducer,
+  renderers: rendererReducer,
+  cells: cellReducer,
+  config: configReducer,
+  uischemas: uischemaRegistryReducer,
+  defaultData: defaultDataReducer,
+  i18n: i18nReducer
+};
 
 export const getData = (state: JsonFormsState) =>
   extractData(get(state, 'jsonforms.core'));
@@ -96,6 +97,9 @@ export const getUiSchema = (state: JsonFormsState): UISchemaElement =>
   extractUiSchema(get(state, 'jsonforms.core'));
 export const getRefParserOptions = (state: JsonFormsState): RefParser.Options =>
   extractRefParserOptions(get(state, 'jsonforms.core'));
+export const getAjv = (
+  state: JsonFormsState
+): Ajv => extractAjv(get(state, 'jsonforms.core'));
 export const getDefaultData = (
   state: JsonFormsState
 ): JsonFormsDefaultDataRegistryEntry[] =>
@@ -106,6 +110,9 @@ export const getRenderers = (
 export const getCells = (
   state: JsonFormsState
 ): JsonFormsCellRendererRegistryEntry[] => get(state, 'jsonforms.cells');
+export const getUISchemas = (
+  state: JsonFormsState
+): JsonFormsUISchemaRegistryEntry[] => get(state, 'jsonforms.uischemas');
 
 /**
  * Finds a registered UI schema to use, if any.
@@ -116,7 +123,7 @@ export const getCells = (
  * @param control may be checked for embedded inline uischema options
  */
 export const findUISchema = (
-  uischemas: { tester: UISchemaTester; uischema: UISchemaElement }[],
+  uischemas: JsonFormsUISchemaRegistryEntry[],
   schema: JsonSchema,
   schemaPath: string,
   path: string,

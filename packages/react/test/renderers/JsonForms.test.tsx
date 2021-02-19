@@ -26,13 +26,15 @@ import React from 'react';
 import { combineReducers, createStore } from 'redux';
 import { Provider } from 'react-redux';
 import {
+  ControlElement,
   createAjv,
   DispatchCellProps,
-  jsonformsReducer,
+  jsonFormsReducerConfig,
   JsonFormsState,
   JsonFormsStore,
   JsonSchema,
   Layout,
+  NOT_APPLICABLE,
   rankWith,
   registerCell,
   registerRenderer,
@@ -40,7 +42,6 @@ import {
   UISchemaElement,
   uiTypeIs,
   unregisterRenderer,
-  ControlElement
 } from '@jsonforms/core';
 import { isEqual } from 'lodash';
 import Enzyme from 'enzyme';
@@ -55,11 +56,11 @@ import {
   JsonFormsDispatchRenderer
 } from '../../src/JsonForms';
 import {
-  JsonFormsReduxContext,
   JsonFormsStateProvider,
   useJsonForms,
   withJsonFormsControlProps
 } from '../../src/JsonFormsContext';
+import { JsonFormsReduxContext } from '../../src/redux';
 import { DispatchCell } from '../../src/DispatchCell';
 
 Enzyme.configure({ adapter: new Adapter() });
@@ -105,7 +106,7 @@ export const initJsonFormsStore = ({
       ...props
     }
   };
-  const reducer = combineReducers({ jsonforms: jsonformsReducer() });
+  const reducer = combineReducers({ jsonforms: combineReducers(jsonFormsReducerConfig) });
   return createStore(reducer, initState);
 };
 
@@ -311,7 +312,7 @@ test('render schema with $ref', () => {
   const promise = Promise.resolve(resolvedSchema);
   jest.spyOn(RefParser, 'dereference').mockImplementation(() => promise);
 
-  const wrapper = shallow(
+  const wrapper = mount(
     <JsonFormsDispatchRenderer
       path={''}
       uischema={fixture.uischema}
@@ -821,6 +822,91 @@ test('JsonForms should generate a schema when schema is not given', () => {
   expect(jsonFormsStateProviderInitStateProp.core.schema).toStrictEqual(schema);
   expect(jsonFormsStateProviderInitStateProp.core.uischema).toStrictEqual(
     uischema
+  );
+});
+
+test('JsonForms should use uischemas', () => {
+  const schema = {
+    type: 'object',
+    properties: {
+      foo: {
+        type: 'object',
+        properties: {
+          bar: {
+            type: 'string',
+          },
+          baz: {
+            type: 'number'
+          }
+        }
+      }
+    }
+  };
+
+  const uischemas = [
+    {
+      tester: (_jsonSchema: JsonSchema, schemaPath: string) => {
+        return schemaPath === '#/properties/foo' ? 2 : NOT_APPLICABLE;
+      },
+      uischema: {
+        type: 'HorizontalLayout',
+        elements: [
+          {
+            type: 'Control',
+            scope: '#/properties/bar'
+          },
+          {
+            type: 'Control',
+            scope: '#/properties/baz'
+          }
+        ]
+      }
+    }
+  ];
+
+  const wrapper = shallow(
+    <JsonForms
+      data={{}}
+      schema={schema}
+      uischema={true as any}
+      renderers={undefined}
+      uischemas={uischemas}
+    />
+  );
+
+  const jsonFormsStateProviderInitStateProp = wrapper
+    .find(JsonFormsStateProvider)
+    .props().initState;
+  expect(jsonFormsStateProviderInitStateProp.uischemas).toStrictEqual(
+    uischemas
+  );
+});
+
+test('JsonForms should not crash with undefined uischemas', () => {
+  const schema = {
+    type: 'object',
+    properties: {
+      foo: {
+        type: 'string'
+      }
+    }
+  };
+
+  const wrapper = shallow(
+    <JsonForms
+      data={{}}
+      schema={schema}
+      uischema={true as any}
+      renderers={undefined}
+      uischemas={undefined}
+    />
+  );
+
+  const jsonFormsStateProviderInitStateProp = wrapper
+    .find(JsonFormsStateProvider)
+    .props().initState;
+  expect(jsonFormsStateProviderInitStateProp.uischemas).toStrictEqual(
+    undefined
   );
 });
 

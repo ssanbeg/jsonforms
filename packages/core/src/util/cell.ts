@@ -24,8 +24,10 @@
 */
 import isEmpty from 'lodash/isEmpty';
 import union from 'lodash/union';
-import { getConfig, getData, getErrorAt, getSchema } from '../reducers';
+import { getConfig, getData, getErrorAt, getSchema, getAjv } from '../reducers';
 import {
+  AnyAction,
+  Dispatch,
   formatErrorMessage,
   isEnabled,
   isVisible,
@@ -34,9 +36,13 @@ import {
   Resolve,
   StatePropsOfScopedRenderer
 } from '.';
-import { DispatchPropsOfControl, mapDispatchToControlProps } from './renderer';
+import {
+  DispatchPropsOfControl,
+  EnumOption,
+  enumToEnumOptionMapper,
+  mapDispatchToControlProps,
+} from './renderer';
 import { JsonFormsState } from '../store';
-import { AnyAction, Dispatch } from 'redux';
 import { JsonFormsCellRendererRegistryEntry } from '../reducers/cells';
 import { JsonSchema } from '..';
 
@@ -102,11 +108,12 @@ export const mapStateToCellProps = (
   const visible =
     ownProps.visible !== undefined
       ? ownProps.visible
-      : isVisible(uischema, rootData);
+      : isVisible(uischema, rootData, undefined, getAjv(state));
+  const readonly = state.jsonforms.readonly;
   const enabled =
-    ownProps.enabled !== undefined
+    !readonly && (ownProps.enabled !== undefined
       ? ownProps.enabled
-      : isEnabled(uischema, rootData);
+      : isEnabled(uischema, rootData, undefined, getAjv(state)));
   const errors = formatErrorMessage(
     union(getErrorAt(path, schema)(state).map(error => error.message))
   );
@@ -156,8 +163,10 @@ export const defaultMapStateToEnumCellProps = (
   ownProps: OwnPropsOfEnumCell
 ): StatePropsOfEnumCell => {
   const props: StatePropsOfCell = mapStateToCellProps(state, ownProps);
-  const options =
-    ownProps.options !== undefined ? ownProps.options : props.schema.enum;
+  const options: EnumOption[] =
+    ownProps.options ||
+    props.schema.enum?.map(enumToEnumOptionMapper) ||
+    props.schema.const && [enumToEnumOptionMapper(props.schema.const)];
   return {
     ...props,
     options

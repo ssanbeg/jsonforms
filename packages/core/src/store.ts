@@ -22,13 +22,12 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 */
-import { Store } from 'redux';
+import { Store } from './util';
 import { JsonFormsCore } from './reducers/core';
 import { JsonFormsCellRendererRegistryEntry } from './reducers/cells';
 import { JsonFormsRendererRegistryEntry } from './reducers/renderers';
 import { JsonFormsLocaleState } from './reducers/i18n';
-import { UISchemaTester } from './reducers/uischemas';
-import { UISchemaElement } from './models/uischema';
+import { JsonFormsUISchemaRegistryEntry } from './reducers/uischemas';
 
 /**
  * JSONForms store.
@@ -69,7 +68,11 @@ export interface JsonFormsSubStates {
   /**
    *
    */
-  uischemas?: { tester: UISchemaTester; uischema: UISchemaElement }[];
+  uischemas?: JsonFormsUISchemaRegistryEntry[];
+  /**
+   * If true, sets all controls to read-only.
+   */
+  readonly?: boolean;
   // allow additional state
   [additionalState: string]: any;
 }

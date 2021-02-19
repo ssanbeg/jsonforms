@@ -27,35 +27,49 @@ import { init, update, UPDATE_DATA, UpdateAction } from '../../src/actions';
 import * as Redux from 'redux';
 import {
   clearAllIds,
+  computeLabel,
   createAjv,
   createDefaultValue,
   mapDispatchToArrayControlProps,
   mapDispatchToControlProps,
+  mapStateToArrayLayoutProps,
   mapStateToControlProps,
   mapStateToJsonFormsRendererProps,
   mapStateToLayoutProps,
-  mapStateToArrayLayoutProps,
   mapStateToOneOfProps,
-  computeLabel
 } from '../../src/util';
 import configureStore from 'redux-mock-store';
 import test from 'ava';
 import { generateDefaultUISchema } from '../../src/generators';
 import {
   ControlElement,
+  CoreActions,
   coreReducer,
+  Dispatch,
+  JsonFormsCore,
   JsonFormsState,
   JsonSchema,
   rankWith,
   RuleEffect,
   UISchemaElement
 } from '../../src';
-import { jsonformsReducer } from '../../src/reducers';
 import { ErrorObject } from 'ajv';
-import { combineReducers, createStore, Store } from 'redux';
+import { setValidationMode } from '../../lib';
 
 const middlewares: Redux.Middleware[] = [];
 const mockStore = configureStore<JsonFormsState>(middlewares);
+
+const mockDispatch = (
+  initialCore: JsonFormsCore
+): [() => JsonFormsCore, Dispatch<CoreActions>] => {
+  const coreContainer = { core: initialCore };
+  const dispatch: Dispatch<CoreActions> = <T extends CoreActions> (action: T) : T => {
+    coreContainer.core = coreReducer(coreContainer.core, action);
+    return action;
+  };
+  const getCore = () => coreContainer.core;
+  return [getCore, dispatch];
+};
 
 const hideRule = {
   effect: RuleEffect.HIDE,
@@ -68,6 +82,15 @@ const hideRule = {
 
 const disableRule = {
   effect: RuleEffect.DISABLE,
+  condition: {
+    type: 'LEAF',
+    scope: '#/properties/firstName',
+    expectedValue: 'Homer'
+  }
+};
+
+const enableRule = {
+  effect: RuleEffect.ENABLE,
   condition: {
     type: 'LEAF',
     scope: '#/properties/firstName',
@@ -180,6 +203,44 @@ test('mapStateToControlProps - visible via state with path from ownProps ', t =>
   };
   const props = mapStateToControlProps(state, ownProps);
   t.true(props.visible);
+});
+
+test('mapStateToControlProps - disabled via global readonly', t => {
+  const ownProps = {
+    uischema: coreUISchema
+  };
+  const state: JsonFormsState = createState(coreUISchema);
+  state.jsonforms.readonly = true;
+
+  const props = mapStateToControlProps(state, ownProps);
+  t.false(props.enabled);
+});
+
+test('mapStateToControlProps - disabled via global readonly beats enabled via ownProps', t => {
+  const ownProps = {
+    uischema: coreUISchema,
+    enabled: true
+  };
+  const state: JsonFormsState = createState(coreUISchema);
+  state.jsonforms.readonly = true;
+
+  const props = mapStateToControlProps(state, ownProps);
+  t.false(props.enabled);
+});
+
+test('mapStateToControlProps - disabled via global readonly beats enabled via rule', t => {
+  const uischema = {
+    ...coreUISchema,
+    rule: enableRule
+  };
+  const ownProps = {
+    uischema
+  };
+  const state: JsonFormsState = createState(uischema);
+  state.jsonforms.readonly = true;
+
+  const props = mapStateToControlProps(state, ownProps);
+  t.false(props.enabled);
 });
 
 test('mapStateToControlProps - enabled via state with path from ownProps ', t => {
@@ -364,6 +425,44 @@ test('mapStateToControlProps - id', t => {
   t.is(props.id, '#/properties/firstName');
 });
 
+test('mapStateToControlProps - hide errors in hide validation mode', t => {
+  const schema = {
+    type: 'object',
+    properties: {
+      animal: {
+        type: 'string'
+      }
+    }
+  };
+  const uischema: ControlElement = {
+    type: 'Control',
+    scope: '#/properties/animal'
+  };
+  const initCoreState = coreReducer(undefined, init({ animal: 100 }, schema, uischema));
+  t.is(initCoreState.errors.length, 1);
+
+  const ownProps = {
+    uischema
+  };
+  const props = mapStateToControlProps(
+    { jsonforms: { core: initCoreState } },
+    ownProps
+  );
+  t.not(props.errors.length, 0);
+
+  const hideErrorsState = coreReducer(
+    initCoreState,
+    setValidationMode('ValidateAndHide')
+  );
+  t.is(hideErrorsState.errors.length, 1);
+
+  const hideErrorsProps = mapStateToControlProps(
+    { jsonforms: { core: hideErrorsState } },
+    ownProps
+  );
+  t.is(hideErrorsProps.errors, '');
+});
+
 test('mapDispatchToControlProps', t => {
   const store = mockStore(createState(coreUISchema));
   const props = mapDispatchToControlProps(store.dispatch);
@@ -467,24 +566,17 @@ test('mapDispatchToArrayControlProps should adding items to array', t => {
     type: 'Control',
     scope: '#'
   };
-  const initState: JsonFormsState = {
-    jsonforms: {
-      core: {
-        uischema,
-        schema,
-        data,
-        errors: [] as ErrorObject[]
-      }
-    }
+  const initCore: JsonFormsCore = {
+    uischema,
+    schema,
+    data,
+    errors: [] as ErrorObject[]
   };
-  const store: Store<JsonFormsState> = createStore(
-    combineReducers<JsonFormsState>({ jsonforms: jsonformsReducer() }),
-    initState
-  );
-  store.dispatch(init(data, schema, uischema));
-  const props = mapDispatchToArrayControlProps(store.dispatch);
+  const [getCore, dispatch] = mockDispatch(initCore);
+  dispatch(init(data, schema, uischema));
+  const props = mapDispatchToArrayControlProps(dispatch);
   props.addItem('', createDefaultValue(schema))();
-  t.is(store.getState().jsonforms.core.data.length, 2);
+  t.is(getCore().data.length, 2);
 });
 
 test('mapDispatchToArrayControlProps should remove items from array', t => {
@@ -499,23 +591,18 @@ test('mapDispatchToArrayControlProps should remove items from array', t => {
     type: 'Control',
     scope: '#'
   };
-  const initState: JsonFormsState = {
-    jsonforms: {
-      core: {
-        uischema,
-        schema,
-        data,
-        errors: [] as ErrorObject[]
-      }
-    }
+  const initCore: JsonFormsCore = {
+    uischema,
+    schema,
+    data,
+    errors: [] as ErrorObject[]
   };
-  const reducer = combineReducers({ jsonforms: jsonformsReducer() });
-  const store: Store<JsonFormsState> = createStore(reducer, initState);
-  store.dispatch(init(data, schema, uischema));
-  const props = mapDispatchToArrayControlProps(store.dispatch);
+  const [getCore, dispatch] = mockDispatch(initCore);
+  dispatch(init(data, schema, uischema));
+  const props = mapDispatchToArrayControlProps(dispatch);
   props.removeItems('', [0, 1])();
-  t.is(store.getState().jsonforms.core.data.length, 1);
-  t.is(store.getState().jsonforms.core.data[0], 'quux');
+  t.is(getCore().data.length, 1);
+  t.is(getCore().data[0], 'quux');
 });
 
 test('mapStateToLayoutProps - visible via state with path from ownProps ', t => {
@@ -623,6 +710,53 @@ test('mapStateToLayoutProps should return renderers prop via ownProps', t => {
     ]
   });
   t.is(props.renderers.length, 1);
+});
+
+test('mapStateToLayoutProps - disabled via global readonly', t => {
+  const uischema = {
+    type: 'VerticalLayout',
+    elements: [coreUISchema],
+  };
+  const ownProps = {
+    uischema
+  };
+  const state: JsonFormsState = createState(uischema);
+  state.jsonforms.readonly = true;
+
+  const props = mapStateToLayoutProps(state, ownProps);
+  t.false(props.enabled);
+});
+
+test('mapStateToLayoutProps - disabled via global readonly beats enabled via ownProps', t => {
+  const uischema = {
+    type: 'VerticalLayout',
+    elements: [coreUISchema],
+  };
+  const ownProps = {
+    uischema,
+    enabled: true
+  };
+  const state: JsonFormsState = createState(uischema);
+  state.jsonforms.readonly = true;
+
+  const props = mapStateToLayoutProps(state, ownProps);
+  t.false(props.enabled);
+});
+
+test('mapStateToLayoutProps - disabled via global readonly beats enabled via rule', t => {
+  const uischema = {
+    type: 'VerticalLayout',
+    elements: [coreUISchema],
+    rule: enableRule
+  };
+  const ownProps = {
+    uischema
+  };
+  const state: JsonFormsState = createState(uischema);
+  state.jsonforms.readonly = true;
+
+  const props = mapStateToLayoutProps(state, ownProps);
+  t.false(props.enabled);
 });
 
 test('mapStateToLayoutProps - hidden via state with path from ownProps ', t => {
@@ -752,13 +886,8 @@ test('should assign defaults to enum', t => {
       }
     }
   };
-  const reducer = combineReducers({ jsonforms: jsonformsReducer() });
-  const store: Store<JsonFormsState> = createStore(reducer, initState);
-  store.dispatch(
-    init(data, schema, uischema, createAjv({ useDefaults: true }))
-  );
-
-  t.is(store.getState().jsonforms.core.data.color, 'green');
+  const newCore = coreReducer(initState.jsonforms.core, init(data, schema, uischema, createAjv({ useDefaults: true })));
+  t.is(newCore.data.color, 'green');
 });
 
 test('should assign defaults to empty item within nested object of an array', t => {
@@ -792,14 +921,10 @@ test('should assign defaults to empty item within nested object of an array', t 
       }
     }
   };
-  const reducer = combineReducers({ jsonforms: jsonformsReducer() });
-  const store: Store<JsonFormsState> = createStore(reducer, initState);
-  store.dispatch(
-    init(data, schema, uischema, createAjv({ useDefaults: true }))
-  );
 
-  t.is(store.getState().jsonforms.core.data.length, 1);
-  t.deepEqual(store.getState().jsonforms.core.data[0], { message: 'foo' });
+  const newCore = coreReducer(initState.jsonforms.core, init(data, schema, uischema, createAjv({ useDefaults: true })));
+  t.is(newCore.data.length, 1);
+  t.deepEqual(newCore.data[0], { message: 'foo' });
 });
 
 test('should assign defaults to newly added item within nested object of an array', t => {
@@ -823,27 +948,19 @@ test('should assign defaults to newly added item within nested object of an arra
 
   const data = [{}];
 
-  const initState: JsonFormsState = {
-    jsonforms: {
-      core: {
-        uischema,
-        schema,
-        data,
-        errors: [] as ErrorObject[]
-      }
-    }
+  const initCore: JsonFormsCore = {
+    uischema,
+    schema,
+    data,
+    errors: [] as ErrorObject[]
   };
-  const reducer = combineReducers({ jsonforms: jsonformsReducer() });
-  const store: Store<JsonFormsState> = createStore(reducer, initState);
-  store.dispatch(
-    init(data, schema, uischema, createAjv({ useDefaults: true }))
-  );
-  const props = mapDispatchToArrayControlProps(store.dispatch);
-
+  const [getCore, dispatch] = mockDispatch(initCore);
+  dispatch(init(data, schema, uischema, createAjv({ useDefaults: true })));
+  const props = mapDispatchToArrayControlProps(dispatch);
   props.addItem('', createDefaultValue(schema))();
 
-  t.is(store.getState().jsonforms.core.data.length, 2);
-  t.deepEqual(store.getState().jsonforms.core.data[0], { message: 'foo' });
+  t.is(getCore().data.length, 2);
+  t.deepEqual(getCore().data[0], { message: 'foo' });
 });
 
 test('computeLabel - should not edit label if not required and hideRequiredAsterisk is false', t => {

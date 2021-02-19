@@ -22,103 +22,21 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 */
-import merge from 'lodash/merge';
 import React from 'react';
 import {
-  computeLabel,
+  and,
   ControlProps,
-  ControlState,
-  isDescriptionHidden,
-  isPlainLabel,
-  rankWith,
-  RankedTester,
-  optionIs
+  isEnumControl,
+  optionIs, OwnPropsOfEnum, RankedTester, rankWith
 } from '@jsonforms/core';
-import { Control, withJsonFormsControlProps } from '@jsonforms/react';
-import Radio from '@material-ui/core/Radio';
-import RadioGroup from '@material-ui/core/RadioGroup';
-import {
-  FormControl,
-  FormControlLabel,
-  FormHelperText,
-  FormLabel,
-  Hidden
-} from '@material-ui/core';
-
-export class MaterialRadioGroupControl extends Control<
-  ControlProps,
-  ControlState
-> {
-  render() {
-    const {
-      config,
-      id,
-      label,
-      required,
-      description,
-      errors,
-      data,
-      schema,
-      visible
-    } = this.props;
-    const isValid = errors.length === 0;
-    const appliedUiSchemaOptions = merge(
-      {},
-      config,
-      this.props.uischema.options
-    );
-    const showDescription = !isDescriptionHidden(
-      visible,
-      description,
-      this.state.isFocused,
-      appliedUiSchemaOptions.showUnfocusedDescription
-    );
-
-    const options = schema.enum;
-
-    return (
-      <Hidden xsUp={!visible}>
-        <FormControl
-          component={'fieldset' as 'div'}
-          fullWidth={!appliedUiSchemaOptions.trim}
-        >
-          <FormLabel
-            htmlFor={id}
-            error={!isValid}
-            component={'legend' as 'label'}
-          >
-            {computeLabel(
-              isPlainLabel(label) ? label : label.default,
-              required,
-              appliedUiSchemaOptions.hideRequiredAsterisk
-            )}
-          </FormLabel>
-
-          <RadioGroup
-            value={this.state.value}
-            onChange={(_ev, value) => this.handleChange(value)}
-            row={true}
-          >
-            {options.map(optionValue => (
-              <FormControlLabel
-                value={optionValue}
-                key={optionValue}
-                control={<Radio checked={data === optionValue} />}
-                label={optionValue}
-              />
-            ))}
-          </RadioGroup>
-          <FormHelperText error={!isValid}>
-            {!isValid ? errors : showDescription ? description : null}
-          </FormHelperText>
-        </FormControl>
-      </Hidden>
-    );
-  }
-}
+import {  withJsonFormsEnumProps } from '@jsonforms/react';
+import { MaterialRadioGroup } from './MaterialRadioGroup';
+export const MaterialRadioGroupControl = (props: ControlProps & OwnPropsOfEnum) => {
+   return <MaterialRadioGroup {...props} />;
+};
 
 export const materialRadioGroupControlTester: RankedTester = rankWith(
-  2,
-  optionIs('format', 'radio')
+  20,
+  and(isEnumControl, optionIs('format', 'radio'))
 );
-export default withJsonFormsControlProps(MaterialRadioGroupControl);
+export default withJsonFormsEnumProps(MaterialRadioGroupControl);

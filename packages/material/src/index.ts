@@ -49,6 +49,8 @@ import {
   materialAnyOfStringOrEnumControlTester,
   MaterialBooleanControl,
   materialBooleanControlTester,
+  MaterialBooleanToggleControl,
+  materialBooleanToggleControlTester,
   MaterialDateControl,
   materialDateControlTester,
   MaterialDateTimeControl,
@@ -61,12 +63,16 @@ import {
   materialNativeControlTester,
   MaterialNumberControl,
   materialNumberControlTester,
+  MaterialOneOfEnumControl,
+  materialOneOfEnumControlTester,
   MaterialRadioGroupControl,
   materialRadioGroupControlTester,
   MaterialSliderControl,
   materialSliderControlTester,
   MaterialTextControl,
-  materialTextControlTester
+  materialTextControlTester,
+  MaterialOneOfRadioGroupControl,
+  materialOneOfRadioGroupControlTester
 } from './controls';
 import {
   MaterialArrayLayout,
@@ -83,6 +89,8 @@ import {
 import {
   MaterialBooleanCell,
   materialBooleanCellTester,
+  MaterialBooleanToggleCell,
+  materialBooleanToggleCellTester,
   MaterialDateCell,
   materialDateCellTester,
   MaterialEnumCell,
@@ -116,6 +124,7 @@ export const materialRenderers: JsonFormsRendererRegistryEntry[] = [
     renderer: MaterialArrayControlRenderer
   },
   { tester: materialBooleanControlTester, renderer: MaterialBooleanControl },
+  { tester: materialBooleanToggleControlTester, renderer: MaterialBooleanToggleControl },
   { tester: materialNativeControlTester, renderer: MaterialNativeControl },
   { tester: materialEnumControlTester, renderer: MaterialEnumControl },
   { tester: materialIntegerControlTester, renderer: MaterialIntegerControl },
@@ -132,6 +141,11 @@ export const materialRenderers: JsonFormsRendererRegistryEntry[] = [
     tester: materialRadioGroupControlTester,
     renderer: MaterialRadioGroupControl
   },
+  {
+    tester: materialOneOfRadioGroupControlTester,
+    renderer: MaterialOneOfRadioGroupControl
+  },
+  { tester: materialOneOfEnumControlTester, renderer: MaterialOneOfEnumControl },
   // layouts
   { tester: materialGroupTester, renderer: MaterialGroupLayout },
   {
@@ -162,6 +176,7 @@ export const materialRenderers: JsonFormsRendererRegistryEntry[] = [
 
 export const materialCells: JsonFormsCellRendererRegistryEntry[] = [
   { tester: materialBooleanCellTester, cell: MaterialBooleanCell },
+  { tester: materialBooleanToggleCellTester, cell: MaterialBooleanToggleCell },
   { tester: materialDateCellTester, cell: MaterialDateCell },
   { tester: materialEnumCellTester, cell: MaterialEnumCell },
   { tester: materialIntegerCellTester, cell: MaterialIntegerCell },

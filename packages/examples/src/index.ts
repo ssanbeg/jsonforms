@@ -1,7 +1,7 @@
 /*
   The MIT License
 
-  Copyright (c) 2017-2019 EclipseSource Munich
+  Copyright (c) 2017-2021 EclipseSource Munich
   https://github.com/eclipsesource/jsonforms
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -35,6 +35,7 @@ import * as stringArray from './stringArray';
 import * as categorization from './categorization';
 import * as stepper from './stepper';
 import * as steppershownav from './steppershownav';
+import * as controlOptions from './control-options';
 import * as day1 from './day1';
 import * as day2 from './day2';
 import * as day3 from './day3';
@@ -42,7 +43,7 @@ import * as day4 from './day4';
 import * as day5 from './day5';
 import * as day6 from './day6';
 import * as dates from './dates';
-import * as dyanmic from './dynamic';
+import * as dynamic from './dynamic';
 import * as generateSchema from './generate';
 import * as generateUISchema from './generateUI';
 import * as layout from './layout';
@@ -66,6 +67,9 @@ import * as oneOfRecursive from './oneOf-recursive';
 import * as huge from './huge';
 import * as defaultExample from './default';
 import * as onChange from './onChange';
+import * as enumExample from './enum';
+import * as radioGroupExample from './radioGroup';
+import * as booleanToggle from './booleanToggle';
 export * from './register';
 export * from './example';
 
@@ -86,6 +90,7 @@ export {
   categorization,
   stepper,
   steppershownav,
+  controlOptions,
   day1,
   day2,
   day3,
@@ -99,7 +104,7 @@ export {
   rule,
   ruleInheritance,
   dates,
-  dyanmic,
+  dynamic,
   resolve,
   config,
   text,
@@ -116,5 +121,8 @@ export {
   oneOfRecursive,
   huge,
   ifThenElse,
-  onChange
+  onChange,
+  enumExample,
+  radioGroupExample,
+  booleanToggle
 };

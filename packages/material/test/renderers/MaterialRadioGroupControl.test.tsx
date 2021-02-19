@@ -25,23 +25,15 @@
 import './MatchMediaMock';
 import * as React from 'react';
 import {
-  Actions,
   ControlElement,
-  isEnumControl,
-  jsonformsReducer,
-  JsonFormsState,
-  JsonSchema,
-  rankWith,
-  UISchemaElement,
-  update
+  NOT_APPLICABLE
 } from '@jsonforms/core';
-import MaterialRadioGroupControl from '../../src/controls/MaterialRadioGroupControl';
-import { Provider } from 'react-redux';
+import MaterialRadioGroupControl, { materialRadioGroupControlTester } from '../../src/controls/MaterialRadioGroupControl';
 import { materialRenderers } from '../../src';
-import { AnyAction, combineReducers, createStore, Reducer, Store } from 'redux';
 import Enzyme, { mount, ReactWrapper } from 'enzyme';
 import Adapter from 'enzyme-adapter-react-16';
-import { JsonFormsReduxContext } from '@jsonforms/react';
+import { JsonFormsStateProvider } from '@jsonforms/react';
+import { initCore } from './util';
 Enzyme.configure({ adapter: new Adapter() });
 
 const data = { foo: 'D' };
@@ -56,32 +48,27 @@ const schema = {
 };
 const uischema: ControlElement = {
   type: 'Control',
-  scope: '#/properties/foo'
+  scope: '#/properties/foo',
+  options: {
+    format: 'radio'
+  }
 };
 
-const initJsonFormsStore = (
-  testData: any,
-  testSchema: JsonSchema,
-  testUiSchema: UISchemaElement
-): Store<JsonFormsState> => {
-  const s: JsonFormsState = {
-    jsonforms: {
-      renderers: [
-        ...materialRenderers,
-        {
-          tester: rankWith(10, isEnumControl),
-          renderer: MaterialRadioGroupControl
-        }
-      ]
-    }
-  };
-  const reducer: Reducer<JsonFormsState, AnyAction> = combineReducers({
-    jsonforms: jsonformsReducer()
+describe('Material radio group tester', () => {
+  it('should return valid rank for enums with radio format', () => {
+    const rank = materialRadioGroupControlTester(uischema, schema);
+    expect(rank).not.toBe(NOT_APPLICABLE);
   });
-  const store: Store<JsonFormsState> = createStore(reducer, s);
-  store.dispatch(Actions.init(testData, testSchema, testUiSchema));
-  return store;
-};
+
+  it('should return NOT_APPLICABLE for enums without radio format', () => {
+    const uiSchemaNoRadio = {
+      type: 'Control',
+      scope: '#/properties/foo'
+    };
+    const rank = materialRadioGroupControlTester(uiSchemaNoRadio, schema);
+    expect(rank).toBe(NOT_APPLICABLE);
+  });
+});
 
 describe('Material radio group control', () => {
   let wrapper: ReactWrapper;
@@ -89,13 +76,11 @@ describe('Material radio group control', () => {
   afterEach(() => wrapper.unmount());
 
   it('should have option selected', () => {
-    const store = initJsonFormsStore(data, schema, uischema);
+    const core = initCore(schema, uischema, data);
     wrapper = mount(
-      <Provider store={store}>
-        <JsonFormsReduxContext>
-          <MaterialRadioGroupControl schema={schema} uischema={uischema} />
-        </JsonFormsReduxContext>
-      </Provider>
+      <JsonFormsStateProvider initState={{ renderers: materialRenderers, core }}>
+        <MaterialRadioGroupControl schema={schema} uischema={uischema} />
+      </JsonFormsStateProvider>
     );
 
     const radioButtons = wrapper.find('input[type="radio"]');
@@ -105,17 +90,17 @@ describe('Material radio group control', () => {
   });
 
   it('should have only update selected option ', () => {
-    const store = initJsonFormsStore(data, schema, uischema);
+    const core = initCore(schema, uischema, data);
 
-    store.dispatch(update('foo', () => 'A'));
-    store.dispatch(update('foo', () => 'B'));
+    core.data = { ...core.data, foo: 'A' };
+    core.data = { ...core.data, foo: 'B' };
+    wrapper.setProps({ initState: { renderers: materialRenderers, core }} );
+    wrapper.update();
 
     wrapper = mount(
-      <Provider store={store}>
-        <JsonFormsReduxContext>
-          <MaterialRadioGroupControl schema={schema} uischema={uischema} />
-        </JsonFormsReduxContext>
-      </Provider>
+      <JsonFormsStateProvider initState={{ renderers: materialRenderers, core }}>
+        <MaterialRadioGroupControl schema={schema} uischema={uischema} />
+      </JsonFormsStateProvider>
     );
     const currentlyChecked = wrapper.find('input[type="radio"][checked=true]');
     expect(currentlyChecked.length).toBe(1);
@@ -123,17 +108,15 @@ describe('Material radio group control', () => {
   });
 
   it('should be hideable ', () => {
-    const store = initJsonFormsStore(data, schema, uischema);
+    const core = initCore(schema, uischema, data);
     wrapper = mount(
-      <Provider store={store}>
-        <JsonFormsReduxContext>
-          <MaterialRadioGroupControl
-            schema={schema}
-            uischema={uischema}
-            visible={false}
-          />
-        </JsonFormsReduxContext>
-      </Provider>
+      <JsonFormsStateProvider initState={{ renderers: materialRenderers, core }}>
+        <MaterialRadioGroupControl
+          schema={schema}
+          uischema={uischema}
+          visible={false}
+        />
+      </JsonFormsStateProvider>
     );
 
     const radioButtons = wrapper.find('input[type="radio"]');

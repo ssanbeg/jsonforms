@@ -29,6 +29,7 @@ import find from 'lodash/find';
 import RefParser from 'json-schema-ref-parser';
 import {
   findUISchema,
+  getAjv,
   getCells,
   getConfig,
   getData,
@@ -37,16 +38,17 @@ import {
   getRenderers,
   getSchema,
   getSubErrorsAt,
-  getUiSchema,
-  UISchemaTester
+  getUiSchema
 } from '../reducers';
 import { RankedTester } from '../testers';
 import { JsonSchema } from '../models/jsonSchema';
 import {
+  AnyAction,
   CombinatorKeyword,
   composePaths,
   composeWithUi,
   createLabelDescriptionFrom,
+  Dispatch,
   formatErrorMessage,
   hasEnableRule,
   hasShowRule,
@@ -57,12 +59,12 @@ import {
   Resolve,
   resolveSubSchemas
 } from '../util';
-import { update, CoreActions } from '../actions';
+import { CoreActions, update } from '../actions';
 import { ErrorObject } from 'ajv';
 import { JsonFormsState } from '../store';
-import { AnyAction, Dispatch } from 'redux';
 import { JsonFormsRendererRegistryEntry } from '../reducers/renderers';
 import { JsonFormsCellRendererRegistryEntry } from '../reducers/cells';
+import { JsonFormsUISchemaRegistryEntry } from '../reducers/uischemas';
 
 export { JsonFormsRendererRegistryEntry, JsonFormsCellRendererRegistryEntry };
 
@@ -172,6 +174,16 @@ export interface WithClassname {
   className?: string;
 }
 
+export interface EnumOption {
+  label: string;
+  value: any;
+}
+
+export const enumToEnumOptionMapper = (e: any): EnumOption => {
+  const stringifiedEnum = typeof e === 'string' ? e : JSON.stringify(e);
+  return { label: stringifiedEnum, value: e };
+};
+
 export interface OwnPropsOfRenderer {
   /**
    * The UI schema to be rendered.
@@ -200,6 +212,8 @@ export interface OwnPropsOfRenderer {
   renderers?: JsonFormsRendererRegistryEntry[];
 
   cells?: JsonFormsCellRendererRegistryEntry[];
+
+  uischemas?: JsonFormsUISchemaRegistryEntry[];
 }
 
 export interface OwnPropsOfControl extends OwnPropsOfRenderer {
@@ -209,7 +223,7 @@ export interface OwnPropsOfControl extends OwnPropsOfRenderer {
 }
 
 export interface OwnPropsOfEnum {
-  options?: any[];
+  options?: EnumOption[];
 }
 
 export interface OwnPropsOfLayout extends OwnPropsOfRenderer {
@@ -385,12 +399,13 @@ export const mapStateToControlProps = (
   const path = composeWithUi(uischema, ownProps.path);
   const visible: boolean =
     ownProps.visible === undefined || hasShowRule(uischema)
-      ? isVisible(uischema, rootData, ownProps.path)
+      ? isVisible(uischema, rootData, ownProps.path, getAjv(state))
       : ownProps.visible;
+  const readonly = state.jsonforms.readonly;
   const enabled: boolean =
-    ownProps.enabled === undefined || hasEnableRule(uischema)
-      ? isEnabled(uischema, rootData, ownProps.path)
-      : ownProps.enabled;
+    !readonly && (ownProps.enabled === undefined || hasEnableRule(uischema)
+      ? isEnabled(uischema, rootData, ownProps.path, getAjv(state) )
+      : ownProps.enabled);
   const controlElement = uischema as ControlElement;
   const id = ownProps.id;
   const rootSchema = getSchema(state);
@@ -454,10 +469,33 @@ export const mapStateToEnumControlProps = (
   ownProps: OwnPropsOfControl & OwnPropsOfEnum
 ): StatePropsOfControl & OwnPropsOfEnum => {
   const props: StatePropsOfControl = mapStateToControlProps(state, ownProps);
-  const options =
-    ownProps.options !== undefined
-      ? ownProps.options
-      : props.schema.enum || [props.schema.const];
+  const options: EnumOption[] =
+      ownProps.options ||
+      props.schema.enum?.map(enumToEnumOptionMapper) ||
+      props.schema.const && [enumToEnumOptionMapper(props.schema.const)];
+  return {
+    ...props,
+    options
+  };
+};
+
+/**
+ * Default mapStateToCellProps for enum control based on oneOf. Options is used for populating dropdown list
+ * @param state
+ * @param ownProps
+ * @returns {StatePropsOfControl & OwnPropsOfEnum}
+ */
+export const mapStateToOneOfEnumControlProps = (
+  state: JsonFormsState,
+  ownProps: OwnPropsOfControl & OwnPropsOfEnum
+): StatePropsOfControl & OwnPropsOfEnum => {
+  const props: StatePropsOfControl = mapStateToControlProps(state, ownProps);
+  const options: EnumOption[] =
+    ownProps.options ||
+    (props.schema.oneOf as JsonSchema[])?.map(e => ({
+      value: e.const,
+      label: e.title || (typeof e.const === 'string' ? e.const : JSON.stringify(e.const))
+    }));
   return {
     ...props,
     options
@@ -499,7 +537,7 @@ export const mapStateToMasterListItemProps = (
  * State-based props of a table control.
  */
 export interface StatePropsOfControlWithDetail extends StatePropsOfControl {
-  uischemas?: { tester: UISchemaTester; uischema: UISchemaElement }[];
+  uischemas?: JsonFormsUISchemaRegistryEntry[];
   renderers?: JsonFormsRendererRegistryEntry[];
   cells?: JsonFormsCellRendererRegistryEntry[];
 }
@@ -671,12 +709,13 @@ export const mapStateToLayoutProps = (
   const { uischema } = ownProps;
   const visible: boolean =
     ownProps.visible === undefined || hasShowRule(uischema)
-      ? isVisible(ownProps.uischema, rootData, ownProps.path)
+      ? isVisible(ownProps.uischema, rootData, ownProps.path, getAjv(state))
       : ownProps.visible;
+  const readonly = state.jsonforms.readonly;
   const enabled: boolean =
-    ownProps.enabled === undefined || hasEnableRule(uischema)
-      ? isEnabled(ownProps.uischema, rootData, ownProps.path)
-      : ownProps.enabled;
+    !readonly && (ownProps.enabled === undefined || hasEnableRule(uischema)
+      ? isEnabled(ownProps.uischema, rootData, ownProps.path, getAjv(state))
+      : ownProps.enabled);
 
   const data = Resolve.data(rootData, ownProps.path);
 
@@ -746,7 +785,7 @@ export interface StatePropsOfCombinator extends OwnPropsOfControl {
   path: string;
   id: string;
   indexOfFittingSchema: number;
-  uischemas: { tester: UISchemaTester; uischema: UISchemaElement }[];
+  uischemas: JsonFormsUISchemaRegistryEntry[];
   data: any;
 }
 
@@ -765,7 +804,7 @@ const mapStateToCombinatorRendererProps = (
   );
   const visible: boolean =
     ownProps.visible === undefined || hasShowRule(uischema)
-      ? isVisible(uischema, getData(state), ownProps.path)
+      ? isVisible(uischema, getData(state), ownProps.path, getAjv(state))
       : ownProps.visible;
   const id = ownProps.id;
 

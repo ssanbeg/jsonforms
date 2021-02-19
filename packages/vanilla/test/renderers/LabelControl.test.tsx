@@ -24,7 +24,7 @@
 */
 import * as React from 'react';
 import { LabelElement, UISchemaElement } from '@jsonforms/core';
-import { JsonFormsReduxContext } from '@jsonforms/react';
+import { JsonFormsReduxContext } from '@jsonforms/react/lib/redux';
 import { Provider } from 'react-redux';
 import Adapter from 'enzyme-adapter-react-16';
 import Enzyme, { mount, ReactWrapper } from 'enzyme';
@@ -32,6 +32,7 @@ import LabelRenderer, {
   labelRendererTester
 } from '../../src/complex/LabelRenderer';
 import { initJsonFormsVanillaStore } from '../vanillaStore';
+import { JsonFormsStyleContext } from '../../src/styles';
 
 Enzyme.configure({ adapter: new Adapter() });
 
@@ -70,16 +71,17 @@ describe('Label', () => {
     const store = initJsonFormsVanillaStore({
       data: fixture.data,
       schema: fixture.schema,
-      uischema,
-      styles: fixture.styles
+      uischema
     });
     wrapper = mount(
       <Provider store={store}>
         <JsonFormsReduxContext>
-          <LabelRenderer
-            schema={fixture.schema}
-            uischema={uischema}
-          />
+          <JsonFormsStyleContext.Provider value={{ styles: fixture.styles }}>
+            <LabelRenderer
+              schema={fixture.schema}
+              uischema={uischema}
+              />
+          </JsonFormsStyleContext.Provider>
         </JsonFormsReduxContext>
       </Provider>
     );
@@ -97,17 +99,18 @@ describe('Label', () => {
     const store = initJsonFormsVanillaStore({
       data: fixture.data,
       schema: fixture.schema,
-      uischema,
-      styles: fixture.styles
+      uischema
     });
 
     wrapper = mount(
       <Provider store={store}>
         <JsonFormsReduxContext>
-          <LabelRenderer
-            schema={fixture.schema}
-            uischema={uischema}
-          />
+          <JsonFormsStyleContext.Provider value={{ styles: fixture.styles }}>
+            <LabelRenderer
+              schema={fixture.schema}
+              uischema={uischema}
+              />
+          </JsonFormsStyleContext.Provider>
         </JsonFormsReduxContext>
       </Provider>
     );
@@ -120,16 +123,17 @@ describe('Label', () => {
     const store = initJsonFormsVanillaStore({
       data: fixture.data,
       schema: fixture.schema,
-      uischema: fixture.uischema,
-      styles: fixture.styles
+      uischema: fixture.uischema
     });
     wrapper = mount(
       <Provider store={store}>
         <JsonFormsReduxContext>
-          <LabelRenderer
-            schema={fixture.schema}
-            uischema={fixture.uischema}
-          />
+          <JsonFormsStyleContext.Provider value={{ styles: fixture.styles }}>
+            <LabelRenderer
+              schema={fixture.schema}
+              uischema={fixture.uischema}
+              />
+          </JsonFormsStyleContext.Provider>
         </JsonFormsReduxContext>
       </Provider>
     );
