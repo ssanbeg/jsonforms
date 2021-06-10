@@ -1,5 +1,5 @@
 <template>
-  <label v-if="layout.visible" :class="styles.label">
+  <label v-if="layout.visible" :class="styles.label.root">
     {{ this.layout.uischema.text }}
   </label>
 </template>
@@ -15,7 +15,8 @@ import { defineComponent } from '../../config/vue';
 import {
   DispatchRenderer,
   rendererProps,
-  useJsonFormsLayout
+  useJsonFormsLayout,
+  RendererProps
 } from '../../config/jsonforms';
 import { useVanillaLayout } from '../util';
 
@@ -27,7 +28,7 @@ const labelRenderer = defineComponent({
   props: {
     ...rendererProps<Layout>()
   },
-  setup(props) {
+  setup(props: RendererProps<Layout>) {
     // reuse layout bindings for label
     return useVanillaLayout(useJsonFormsLayout(props));
   }

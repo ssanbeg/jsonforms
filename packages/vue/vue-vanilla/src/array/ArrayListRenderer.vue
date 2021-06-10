@@ -1,7 +1,11 @@
 <template>
   <fieldset v-if="control.visible" :class="styles.arrayList.root">
     <legend :class="styles.arrayList.legend">
-      <button :class="styles.arrayList.addButton" @click="addButtonClick">
+      <button
+        :class="styles.arrayList.addButton"
+        @click="addButtonClick"
+        type="button"
+      >
         +
       </button>
       <label :class="styles.arrayList.label">
@@ -51,7 +55,8 @@ import { defineComponent } from '../../config/vue';
 import {
   DispatchRenderer,
   rendererProps,
-  useJsonFormsArrayControl
+  useJsonFormsArrayControl,
+  RendererProps
 } from '../../config/jsonforms';
 import { useVanillaArrayControl } from '../util';
 import ArrayListElement from './ArrayListElement.vue';
@@ -65,7 +70,7 @@ const controlRenderer = defineComponent({
   props: {
     ...rendererProps<ControlElement>()
   },
-  setup(props) {
+  setup(props: RendererProps<ControlElement>) {
     return useVanillaArrayControl(useJsonFormsArrayControl(props));
   },
   computed: {

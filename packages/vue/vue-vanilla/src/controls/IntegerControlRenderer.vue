@@ -1,6 +1,6 @@
 <template>
   <control-wrapper
-    v-bind="control"
+    v-bind="controlWrapper"
     :styles="styles"
     :isFocused="isFocused"
     :appliedOptions="appliedOptions"
@@ -13,6 +13,7 @@
       :value="control.data"
       :disabled="!control.enabled"
       :autofocus="appliedOptions.focus"
+      :placeholder="appliedOptions.placeholder"
       @change="onChange"
       @focus="isFocused = true"
       @blur="isFocused = false"
@@ -28,7 +29,7 @@ import {
   isIntegerControl
 } from '@jsonforms/core';
 import { defineComponent } from '../../config/vue';
-import { rendererProps, useJsonFormsControl } from '../../config/jsonforms';
+import { rendererProps, useJsonFormsControl, RendererProps } from '../../config/jsonforms';
 import { default as ControlWrapper } from './ControlWrapper.vue';
 import { useVanillaControl } from '../util';
 
@@ -40,7 +41,7 @@ const controlRenderer = defineComponent({
   props: {
     ...rendererProps<ControlElement>()
   },
-  setup(props) {
+  setup(props: RendererProps<ControlElement>) {
     return useVanillaControl(useJsonFormsControl(props), target => parseInt(target.value, 10));
   },
 });
